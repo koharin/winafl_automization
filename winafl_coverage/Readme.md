@@ -1,9 +1,8 @@
 # winafl-coverage-graph
 ## GOAL
-- get winafl coverage data
-- run testcases via afl-showmap
+- run testcases  in order to created time with afl-showmap
 - get bitmap data (trace data) from afl-showmap result
-- get difference between new and old coverage data
+- get difference between new and old data (?) -> coverage
 - show coverage in graph 
 
 ## PREREQUISITE
