@@ -1,9 +1,9 @@
 # winafl-coverage-graph
-## GOAL
-- run testcases  in order to created time with afl-showmap
+## IDEA
+- run testcases with afl-showmap
 - get bitmap data (trace data) from afl-showmap result
 - get difference between new and old data (?) -> coverage
-- show coverage in graph 
+- show coverage in graph
 
 ## PREREQUISITE
 - Visual Studio 2022
