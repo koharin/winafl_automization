@@ -1218,7 +1218,7 @@ int test(char *file_path, char **argv){
 
         }
         free(mem);
-        // restore output filename
+        // counting for testcase result filename
         count++;
       }
 

@@ -23,3 +23,8 @@ cmake --build . --config Release
 
 ## WARNING!
 - be sure to maintain DynamoRIO always up-to-date (otherwise, it would raise error.)
+
+
+## TROUBLESHOOTING
+- [troubleshooting](troubleshooting.md)
+
