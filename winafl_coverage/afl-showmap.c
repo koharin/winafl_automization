@@ -112,15 +112,7 @@ int test(char *target);
 struct _finddata_t fd;
 char *full_path[256]={0,};
 static u8 *sync_dir;
-
-enum{
-  /* 00 */ FAULT_NONE,
-  /* 01 */ FAULT_TMOUT,
-  /* 02 */ FAULT_CRASH,
-  /* 03 */ FAULT_ERROR,
-  /* 04 */ FAULT_NOINST,
-  /* 05 */ FAULT_NOBITS
-};
+s32 count=0;
 
 static const u8 count_class_human[256] = {
 
@@ -297,6 +289,8 @@ static u32 write_results(void) {
 
   s32 fd;
   u32 i, ret = 0;
+  char c;
+  char str[10];
 
   u8  cco = !!getenv("AFL_CMIN_CRASHES_ONLY"),
       caa = !!getenv("AFL_CMIN_ALLOW_ANY");
@@ -312,7 +306,14 @@ static u32 write_results(void) {
     if (fd < 0) PFATAL("Unable to open stdout");
 
   } else {
-
+    // make filename
+    c = count + '0';
+    if(!count){
+      itoa(count, str, 10);
+      strcat(out_file, str);
+    }
+    else out_file[strlen(out_file)-1] = c;
+    // open output file
     fd = _open(out_file, O_WRONLY | O_CREAT | O_TRUNC, DEFAULT_PERMISSION);
     if (fd < 0) PFATAL("Unable to create '%s'", out_file);
 
@@ -1134,7 +1135,7 @@ int main(int argc, char** argv) {
 
   use_argv = argv + optind;
   
-  test2(argv[i+2], use_argv);
+  test(argv[i+2], use_argv);
 /*
   tcnt = write_results();
 
@@ -1148,70 +1149,8 @@ int main(int argc, char** argv) {
   exit(child_crashed * 2 + child_timed_out);
 
 }
-/*
+
 int test(char *file_path, char **argv){
-  WIN32_FIND_DATA sd;
-  HANDLE h;
-  char *find_pattern;
-  int i=0,j=0;
-  u8 fault=0;
-
-  find_pattern = alloc_printf("%s\\*", file_path);
-  //ACTF("file_path: %s\n", find_pattern);
-  h = FindFirstFile(find_pattern, &sd);
-  if(h == INVALID_HANDLE_VALUE){
-    PFATAL("Unable to open %s\n", file_path);
-
-  }
-
-  do{
-    HANDLE h2;
-    u8 *path;
-    s32 fd;
-    struct stat st;
-    int tcnt;
-
-    if(sd.cFileName[0] == '.') continue;
-    path = alloc_printf("%s\\%s", file_path, sd.cFileName);
-
-    ACTF("path: %s\n", path);
-
-    // map the test case(path) into memory
-    fd = open(path, O_RDONLY | O_BINARY);
-    if(fd < 0){
-      PFATAL("Unable to open %s\n", path);
-      ck_free(path);
-      continue;
-    }
-    
-    if(fstat(fd, &st)) PFATAL("fstat() failed");
-    if(st.st_size && st.st_size <= MAX_FILE){
-      u8 fault;
-      u8* mem = malloc(st.st_size);
-      read(fd, mem, st.st_size);
-
-      run_target(argv);
-
-      tcnt = write_results();
-
-      if(!quiet_mode) {
-
-        if(!tcnt) SAYF("No instrumentation detected");
-        OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
-
-      }
-
-      ck_free(path);
-      close(fd);
-    }
-  }while(FindNextFile(h, &sd));
-
-  FindClose(h);
-  ck_free(find_pattern);
-  return 0;
-}
-*/
-int test2(char *file_path, char **argv){
   WIN32_FIND_DATA sd;
   HANDLE h;
   char *find_pattern;
@@ -1246,9 +1185,11 @@ int test2(char *file_path, char **argv){
       u8* path;
       s32 fd;
       struct stat st;
-      int tcnt;
+      int tcnt=0;
 
-      path = alloc_printf("%s\\%s", qd_path, qd.cFileName); // get input test case in queue
+      if(qd.cFileName[0] == '.') continue;
+      // get input test case path in queue
+      path = alloc_printf("%s\\%s", qd_path, qd.cFileName); 
       ACTF("input test case: %s", path);
 
       // map the test case into memory
@@ -1277,7 +1218,8 @@ int test2(char *file_path, char **argv){
 
         }
         free(mem);
-
+        // restore output filename
+        count++;
       }
 
       ck_free(path);

@@ -2,7 +2,7 @@
 ## IDEA
 - run testcases with afl-showmap [V]
 - get bitmap data (trace data) from afl-showmap result [V]
-- save every bitmap data of testcases in separate file
+- save every bitmap data of testcases in separate file [V]
 - `virgin_bits` -> previews test case bitmap result, `trace_bits` -> current test case bitmap result
 - get difference between new and old data (?) -> coverage
 - show coverage in graph
