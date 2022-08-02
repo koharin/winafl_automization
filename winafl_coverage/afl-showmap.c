@@ -113,6 +113,15 @@ struct _finddata_t fd;
 char *full_path[256]={0,};
 static u8 *sync_dir;
 
+enum{
+  /* 00 */ FAULT_NONE,
+  /* 01 */ FAULT_TMOUT,
+  /* 02 */ FAULT_CRASH,
+  /* 03 */ FAULT_ERROR,
+  /* 04 */ FAULT_NOINST,
+  /* 05 */ FAULT_NOBITS
+};
+
 static const u8 count_class_human[256] = {
 
   /* 0 - 3:       4 */ 0, 1, 2, 3,
@@ -689,7 +698,6 @@ static void run_target(char** argv) {
   DWORD num_read;
   char result = 0;
 
-  printf("argv: %s\n", *argv);
   if(!quiet_mode)
     SAYF("-- Program output begins --\n" cRST);
 
@@ -723,6 +731,12 @@ static void run_target(char** argv) {
     //a workaround for first cycle
     ReadFile(pipe_handle, &result, 1, &num_read, NULL);
   }
+  /*
+  if(result == 0){
+    // save us from getting stuck in corner case.
+
+  }
+  */
   if (result != 'P')
   {
     FATAL("Unexpected result from pipe! expected 'P', instead received '%c'\n", result);
@@ -781,7 +795,6 @@ static void detect_file_args(char** argv) {
   if(!cwd) PFATAL("getcwd() failed");
 
   while (argv[i]) {
-    ACTF("argv: %s\n", argv[i]);
     u8* aa_loc = strstr(argv[i], "@@");
 
     if(aa_loc) {
@@ -1117,13 +1130,11 @@ int main(int argc, char** argv) {
     
   }
 
-  //ACTF("argv[1]: %s\n", argv[i+2]);
-
   detect_file_args(argv + optind);
 
   use_argv = argv + optind;
   
-  dir(argv[i+2], use_argv);
+  test2(argv[i+2], use_argv);
 /*
   tcnt = write_results();
 
@@ -1137,32 +1148,38 @@ int main(int argc, char** argv) {
   exit(child_crashed * 2 + child_timed_out);
 
 }
-
-int dir(char *file_path, char **argv){
+/*
+int test(char *file_path, char **argv){
   WIN32_FIND_DATA sd;
   HANDLE h;
   char *find_pattern;
   int i=0,j=0;
+  u8 fault=0;
 
   find_pattern = alloc_printf("%s\\*", file_path);
-  ACTF("file_path: %s\n", find_pattern);
-  if((h = FindFirstFile(find_pattern, &sd)) == INVALID_HANDLE_VALUE){
+  //ACTF("file_path: %s\n", find_pattern);
+  h = FindFirstFile(find_pattern, &sd);
+  if(h == INVALID_HANDLE_VALUE){
     PFATAL("Unable to open %s\n", file_path);
+
   }
 
   do{
-    WIN32_FIND_DATA qd;
     HANDLE h2;
     u8 *path;
     s32 fd;
     struct stat st;
+    int tcnt;
 
     if(sd.cFileName[0] == '.') continue;
     path = alloc_printf("%s\\%s", file_path, sd.cFileName);
-    
+
     ACTF("path: %s\n", path);
+
+    // map the test case(path) into memory
     fd = open(path, O_RDONLY | O_BINARY);
     if(fd < 0){
+      PFATAL("Unable to open %s\n", path);
       ck_free(path);
       continue;
     }
@@ -1175,9 +1192,101 @@ int dir(char *file_path, char **argv){
 
       run_target(argv);
 
+      tcnt = write_results();
+
+      if(!quiet_mode) {
+
+        if(!tcnt) SAYF("No instrumentation detected");
+        OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
+
+      }
+
       ck_free(path);
       close(fd);
     }
+  }while(FindNextFile(h, &sd));
+
+  FindClose(h);
+  ck_free(find_pattern);
+  return 0;
+}
+*/
+int test2(char *file_path, char **argv){
+  WIN32_FIND_DATA sd;
+  HANDLE h;
+  char *find_pattern;
+  int i=0,j=0;
+  u8 fault=0;
+
+  find_pattern = alloc_printf("%s\\*", file_path);
+  //ACTF("file_path: %s\n", find_pattern);
+  h = FindFirstFile(find_pattern, &sd);
+  if(h == INVALID_HANDLE_VALUE){
+    PFATAL("Unable to open %s\n", file_path);
+
+  }
+
+  do{
+    WIN32_FIND_DATA qd;
+    HANDLE h2;
+    u8 *qd_path, *qd_path_pattern;
+
+    if(sd.cFileName[0] == '.') continue;
+    qd_path = alloc_printf("%s\\%s\\queue", file_path, sd.cFileName);
+    qd_path_pattern = alloc_printf("%s\\*", qd_path);
+
+    h2 = FindFirstFile(qd_path_pattern, &qd);
+    if(h2 == INVALID_HANDLE_VALUE){
+      ck_free(qd_path_pattern);
+      ck_free(qd_path);
+      continue;
+    }
+    ACTF("queue path: %s", qd_path);
+    do{
+      u8* path;
+      s32 fd;
+      struct stat st;
+      int tcnt;
+
+      path = alloc_printf("%s\\%s", qd_path, qd.cFileName); // get input test case in queue
+      ACTF("input test case: %s", path);
+
+      // map the test case into memory
+      fd = open(path, O_RDONLY | O_BINARY);
+      if(fd < 0){
+        ck_free(path);
+        continue;
+      }
+
+      if(fstat(fd, &st)) PFATAL("fstat() failed");
+
+      // ignore zero-sized or oversized files
+      if(st.st_size && st.st_size <= MAX_FILE){
+        u8 fault;
+        u8* mem = malloc(st.st_size);
+        read(fd, mem, st.st_size);
+
+        // run target with given test case
+        run_target(argv);
+        tcnt = write_results();
+
+        if(!quiet_mode) {
+
+          if(!tcnt) SAYF("No instrumentation detected");
+          OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
+
+        }
+        free(mem);
+
+      }
+
+      ck_free(path);
+      close(fd);
+    }while(FindNextFile(h2, &qd));
+    
+    FindClose(h2);
+    ck_free(qd_path);
+    ck_free(qd_path_pattern);
   }while(FindNextFile(h, &sd));
 
   FindClose(h);
