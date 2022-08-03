@@ -106,13 +106,10 @@ static volatile u8
 #define AREP64(_sym)  AREP32(_sym), AREP32(_sym)
 #define AREP128(_sym) AREP64(_sym), AREP64(_sym)
 
-int get_dir(char *file_path);
-int dir(char *file_path, char **argv);
-int test(char *target);
-struct _finddata_t fd;
-char *full_path[256]={0,};
-static u8 *sync_dir;
+int test(char *file_path, char **argv);
+void check_coverage(u8* out_path);
 s32 count=0;
+u64 coverage=0;
 
 static const u8 count_class_human[256] = {
 
@@ -313,6 +310,7 @@ static u32 write_results(void) {
       strcat(out_file, str);
     }
     else out_file[strlen(out_file)-1] = c;
+
     // open output file
     fd = _open(out_file, O_WRONLY | O_CREAT | O_TRUNC, DEFAULT_PERMISSION);
     if (fd < 0) PFATAL("Unable to create '%s'", out_file);
@@ -336,7 +334,10 @@ static u32 write_results(void) {
 
     for (i = 0; i < MAP_SIZE; i++) {
 
-      if (!trace_bits[i]) continue;
+      if (!trace_bits[i]) { 
+        fprintf(f, "%06u:%u\n", i, trace_bits[i]);
+        continue;
+      }
       ret++;
 
       if (cmin_mode) {
@@ -1135,17 +1136,9 @@ int main(int argc, char** argv) {
 
   use_argv = argv + optind;
   
+  memset(virgin_bits, 0, MAP_SIZE);
   test(argv[i+2], use_argv);
-/*
-  tcnt = write_results();
-
-  if(!quiet_mode) {
-
-    if(!tcnt) SAYF("No instrumentation detected");
-    OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
-
-  }
-*/
+  
   exit(child_crashed * 2 + child_timed_out);
 
 }
@@ -1155,7 +1148,6 @@ int test(char *file_path, char **argv){
   HANDLE h;
   char *find_pattern;
   int i=0,j=0;
-  u8 fault=0;
 
   find_pattern = alloc_printf("%s\\*", file_path);
   //ACTF("file_path: %s\n", find_pattern);
@@ -1181,6 +1173,7 @@ int test(char *file_path, char **argv){
       continue;
     }
     ACTF("queue path: %s", qd_path);
+    // get testcase
     do{
       u8* path;
       s32 fd;
@@ -1209,13 +1202,15 @@ int test(char *file_path, char **argv){
 
         // run target with given test case
         run_target(argv);
+        // write bitmap data to output file
         tcnt = write_results();
 
         if(!quiet_mode) {
 
           if(!tcnt) SAYF("No instrumentation detected");
           OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
-
+          // write coverage difference between current(trace_bits) and virgin(virgin_bits)
+          check_coverage(file_path);
         }
         free(mem);
         // counting for testcase result filename
@@ -1234,4 +1229,64 @@ int test(char *file_path, char **argv){
   FindClose(h);
   ck_free(find_pattern);
   return 0;
+}
+
+void check_coverage(u8* out_path){
+
+  #ifdef _WIN64
+    u64* current = (u64*)trace_bits;
+    u64* virgin = (u64*)virgin_bits;
+    u64* cur_base = current;
+
+    u32 i = (MAP_SIZE >> 3);
+  #else
+    u32* current = (u32*)trace_bits;
+    u32* virgin = (u32*)virgin_bits;
+    u32* cur_base = current;
+
+    u32 i = (MAP_SIZE >> 2);
+  #endif
+
+    u8 ret = 0;
+    s32 fd;
+    u8* fn;
+    char c;
+
+    // open coverage output file
+    //c = count + '0';
+    fn = alloc_printf("%s\\coverage\\%s", out_path, "coverage");
+    fd = _open(fn, O_WRONLY | O_APPEND | O_BINARY|O_CREAT, DEFAULT_PERMISSION);
+    if(fd < 0) PFATAL("Unable to create or open %s", fn);
+    FILE *f = _fdopen(fd, "ab");
+    if (!f) { 
+      PFATAL("fdopen() failed");
+      // close file with close() if fdopen() returns NULL
+      close(f);
+    }
+
+    // write difference between current and virgin
+    if(count==0){
+      for(int i=0; i<MAP_SIZE; i++) coverage += trace_bits[i];
+    }else{
+      while(i--){
+        if(*current){
+          // increase coverage 
+          if(*current>*virgin) coverage += *current-*virgin;
+          // decrease coverage
+          else coverage -= *virgin-*current;
+        }
+        // increase to compare next bitmap data
+        current++;
+        virgin++;
+      }
+    }
+    // write coverage with time
+    fprintf(f, "%llu:%llu\n", get_cur_time(), coverage);
+    ACTF("coverage%d: %llu:%llu", count, get_cur_time(), coverage);
+
+    // update virgin_bits to current trace_bits
+    for (int i = 0; i < MAP_SIZE; i++) virgin_bits[i] = trace_bits[i];
+
+    ck_free(fn);
+    fclose(f);
 }

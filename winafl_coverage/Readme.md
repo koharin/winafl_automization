@@ -4,7 +4,7 @@
 - get bitmap data (trace data) from afl-showmap result [V]
 - save every bitmap data of testcases in separate file [V]
 - `virgin_bits` -> previews test case bitmap result, `trace_bits` -> current test case bitmap result
-- get difference between new and old data (?) -> coverage
+- get difference between new and old data (?) -> [coverage](coverage.md)
 - show coverage in graph
 
 ## PREREQUISITE
