@@ -107,7 +107,7 @@ static volatile u8
 #define AREP128(_sym) AREP64(_sym), AREP64(_sym)
 
 int test(char *file_path, char **argv);
-void check_coverage(u8* out_path);
+void save_coverage(u8* out_path);
 s32 count=0;
 u64 coverage=0;
 
@@ -1138,7 +1138,7 @@ int main(int argc, char** argv) {
   
   memset(virgin_bits, 0, MAP_SIZE);
   test(argv[i+2], use_argv);
-  
+
   exit(child_crashed * 2 + child_timed_out);
 
 }
@@ -1148,6 +1148,10 @@ int test(char *file_path, char **argv){
   HANDLE h;
   char *find_pattern;
   int i=0,j=0;
+  s32 fd2;
+  u8* fn;
+  FILE *f;
+
 
   find_pattern = alloc_printf("%s\\*", file_path);
   //ACTF("file_path: %s\n", find_pattern);
@@ -1156,6 +1160,17 @@ int test(char *file_path, char **argv){
     PFATAL("Unable to open %s\n", file_path);
 
   }
+
+  // save initial time & coverage
+  fn = alloc_printf("%s\\coverage\\%s", file_path, "coverage");
+  if((fd2 = _open(fn, O_WRONLY | O_BINARY|O_CREAT, DEFAULT_PERMISSION)) < 0)
+    PFATAL("Unable to create or open %s", fn);
+  if(!(f = _fdopen(fd2, "w"))){
+    PFATAL("fdopen() failed");
+    fclose(f);
+  }
+  else fprintf(f, "%llu:%llu\n", get_cur_time(), coverage);
+  fclose(f);
 
   do{
     WIN32_FIND_DATA qd;
@@ -1210,7 +1225,7 @@ int test(char *file_path, char **argv){
           if(!tcnt) SAYF("No instrumentation detected");
           OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
           // write coverage difference between current(trace_bits) and virgin(virgin_bits)
-          check_coverage(file_path);
+          save_coverage(file_path);
         }
         free(mem);
         // counting for testcase result filename
@@ -1231,7 +1246,7 @@ int test(char *file_path, char **argv){
   return 0;
 }
 
-void check_coverage(u8* out_path){
+void save_coverage(u8* out_path){
 
   #ifdef _WIN64
     u64* current = (u64*)trace_bits;
@@ -1265,15 +1280,13 @@ void check_coverage(u8* out_path){
     }
 
     // write difference between current and virgin
-    if(count==0){
+    if(!count){
       for(int i=0; i<MAP_SIZE; i++) coverage += trace_bits[i];
     }else{
       while(i--){
         if(*current){
           // increase coverage 
-          if(*current>*virgin) coverage += *current-*virgin;
-          // decrease coverage
-          else coverage -= *virgin-*current;
+          coverage = (*current>*virgin ? coverage + (*current-*virgin) : coverage - (*virgin-*current));
         }
         // increase to compare next bitmap data
         current++;
