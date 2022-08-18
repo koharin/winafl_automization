@@ -4,7 +4,7 @@
   + if trace_bits value and virgin_bits value in same index is same -> 0
   + if trace_bits value > virgin_bits value in same index -> increase coverage
   + if trace_bits value < virgin_bits value in same index -> decrease COVERAGE
-- write current time and coverage value in file
+- write mtime and coverage value in file
   + it will be used to draw coverage/time graph
 
 ## RUN RESULT
