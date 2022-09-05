@@ -334,10 +334,7 @@ static u32 write_results(void) {
 
     for (i = 0; i < MAP_SIZE; i++) {
 
-      if (!trace_bits[i]) { 
-        fprintf(f, "%06u:%u\n", i, trace_bits[i]);
-        continue;
-      }
+      if (!trace_bits[i]) continue;
       ret++;
 
       if (cmin_mode) {
@@ -1148,9 +1145,9 @@ int test(char *file_path, char **argv){
   HANDLE h;
   char *find_pattern;
   int i=0,j=0;
-  s32 fd2;
+  s32 fd2,fd3;
   u8* fn;
-  FILE *f;
+  FILE *f, *f2;
 
 
   find_pattern = alloc_printf("%s\\*", file_path);
@@ -1160,17 +1157,6 @@ int test(char *file_path, char **argv){
     PFATAL("Unable to open %s\n", file_path);
 
   }
-
-  // save initial time & coverage
-  fn = alloc_printf("%s\\coverage\\%s", file_path, "coverage");
-  if((fd2 = _open(fn, O_WRONLY | O_BINARY|O_CREAT, DEFAULT_PERMISSION)) < 0)
-    PFATAL("Unable to create or open %s", fn);
-  if(!(f = _fdopen(fd2, "w"))){
-    PFATAL("fdopen() failed");
-    fclose(f);
-  }
-  else fprintf(f, "%llu:%llu\n", get_cur_time(), coverage);
-  fclose(f);
 
   do{
     WIN32_FIND_DATA qd;
@@ -1187,7 +1173,7 @@ int test(char *file_path, char **argv){
       ck_free(qd_path);
       continue;
     }
-    ACTF("queue path: %s", qd_path);
+    //ACTF("queue path: %s", qd_path);
     // get testcase
     do{
       u8* path;
@@ -1211,9 +1197,18 @@ int test(char *file_path, char **argv){
 
       // ignore zero-sized or oversized files
       if(st.st_size && st.st_size <= MAX_FILE){
-        u8 fault;
         u8* mem = malloc(st.st_size);
         read(fd, mem, st.st_size);
+
+        fn = alloc_printf("%s\\%s", file_path, "temp");
+        if((fd3 = _open(fn, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, DEFAULT_PERMISSION)) < 0)
+          PFATAL("Unable to create or open %s", fn);
+        if(!(f2 = _fdopen(fd3, "w"))){
+          PFATAL("fdopen() failed");
+          fclose(f2);
+        }
+        fprintf(f2, "%llu\n", st.st_mtime);
+        fclose(f2);
 
         // run target with given test case
         run_target(argv);
@@ -1223,11 +1218,14 @@ int test(char *file_path, char **argv){
         if(!quiet_mode) {
 
           if(!tcnt) SAYF("No instrumentation detected");
-          OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
-          // write coverage difference between current(trace_bits) and virgin(virgin_bits)
-          save_coverage(file_path);
+          else { 
+            OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
+            // write coverage difference between current(trace_bits) and virgin(virgin_bits)
+            save_coverage(file_path);
+          }
         }
         free(mem);
+        unlink(fn);
         // counting for testcase result filename
         count++;
       }
@@ -1263,21 +1261,13 @@ void save_coverage(u8* out_path){
   #endif
 
     u8 ret = 0;
-    s32 fd;
     u8* fn;
-    char c;
-
-    // open coverage output file
-    //c = count + '0';
-    fn = alloc_printf("%s\\coverage\\%s", out_path, "coverage");
-    fd = _open(fn, O_WRONLY | O_APPEND | O_BINARY|O_CREAT, DEFAULT_PERMISSION);
-    if(fd < 0) PFATAL("Unable to create or open %s", fn);
-    FILE *f = _fdopen(fd, "ab");
-    if (!f) { 
-      PFATAL("fdopen() failed");
-      // close file with close() if fdopen() returns NULL
-      close(f);
-    }
+    s32 fd, fd2;
+    u64 time=0;
+    const char *fn2;
+    char *buf=NULL, *pos=NULL;
+    FILE *f, *f2;
+    int num;
 
     // write difference between current and virgin
     if(!count){
@@ -1293,13 +1283,37 @@ void save_coverage(u8* out_path){
         virgin++;
       }
     }
-    // write coverage with time
-    fprintf(f, "%llu:%llu\n", get_cur_time(), coverage);
-    ACTF("coverage%d: %llu:%llu", count, get_cur_time(), coverage);
+
+    // get time from temp file
+    fn2 = alloc_printf("%s\\%s", out_path, "temp");
+    if((f2 = fopen(fn2, "rb")) == NULL){
+      PFATAL("fopen() failed");
+      fclose(f2);
+      exit(1);
+    }
+    fscanf(f2, "%llu", &time);
+    ACTF("coverage time: %llu", time);
+
+    // open coverage output file
+    fn = alloc_printf("%s\\coverage\\%s", out_path, "coverage");
+    fd = _open(fn, O_WRONLY | O_APPEND | O_BINARY|O_CREAT, DEFAULT_PERMISSION);
+    if(fd < 0) PFATAL("Unable to create or open %s", fn);
+    
+    if ((f = _fdopen(fd, "ab")) == NULL) { 
+      PFATAL("fdopen() failed");
+      // close file with close() if fdopen() returns NULL
+      fclose(f);
+      exit(1);
+    }
+    
+    // write file modified time & coverage to file
+    fprintf(f, "%llu:%llu\n", time, coverage);
+    ACTF("coverage%d: %llu:%llu", count, time, coverage);
 
     // update virgin_bits to current trace_bits
     for (int i = 0; i < MAP_SIZE; i++) virgin_bits[i] = trace_bits[i];
 
     ck_free(fn);
     fclose(f);
+    fclose(f2);
 }
