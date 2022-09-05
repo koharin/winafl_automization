@@ -9,103 +9,93 @@
 
 ## RUN RESULT
 ```
-C:\Users\johan\winafl\build\bin\Release>afl-showmap2.exe -o data -D C:\Users\johan\DynamoRIO-Windows-9.0.19202\bin32 -- -target_module "i_view32.exe" -target_offset 0x85130 -coverage_module "i_view32.exe" -nargs 1 -- "C:\Users\johan\winafl\build\bin\Release\i_view32.exe" C:\Users\johan\code\irfanview /convert=C:\Users\johan\Downloads\out.png /silent
+$ afl-showmap2.exe -o data -D C:\Users\johan\DynamoRIO-Windows-9.0.19237\bin32 -- -target_module "i_view32.exe" -target_offset 0x85130 -coverage_module "i_view32.exe" -nargs 1 -- "C:\Program Files (x86)\IrfanView\i_view32.exe" C:\Users\johan\code\irfanview /convert="NUL" /silent
 afl-showmap for Windows 2.36b by <0vercl0k@tuxfamily.org>
 Based on WinAFL 2.36b by <ifratric@google.com>
 Based on AFL 2.36b by <lcamtuf@google.com>
-[*] Executing 'C:\Users\johan\winafl\build\bin\Release\i_view32.exe'...
+[*] Executing 'C:\Program Files (x86)\IrfanView\i_view32.exe'...
 
-[*] queue path: C:\Users\johan\code\irfanview\output\queue
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_0_id_000001
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000191
 -- Program output begins --
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data0'.
-[*] coverage0: 13303989032765:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_1_id_000002
--- Program output begins --
--- Program output ends --
---- Program finished properly ---
-[+] Captured 922 tuples in 'data1'.
-[*] coverage1: 13303989033593:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_2_id_000006
+[+] Captured 961 tuples in 'data0'.
+[*] coverage time: 1661927087
+[*] coverage0: 1661927087:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000192
 -- Program output begins --
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data2'.
-[*] coverage2: 13303989034408:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_3_id_000003
--- Program output begins --
-0 processes nudged
-nudge operation failed, verify permissions and parameters.
--- Program output ends --
-
---- Program finished properly ---
-[+] Captured 922 tuples in 'data3'.
-[*] coverage3: 13303989035267:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_4_id_000004
+[+] Captured 961 tuples in 'data1'.
+[*] coverage time: 1661927088
+[*] coverage1: 1661927088:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000193
 -- Program output begins --
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data4'.
-[*] coverage4: 13303989036002:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_5_id_000005
+[+] Captured 961 tuples in 'data2'.
+[*] coverage time: 1661927088
+[*] coverage2: 1661927088:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000194
+-- Program output begins --
+-- Program output ends --
+
+--- Program finished properly ---
+[+] Captured 961 tuples in 'data3'.
+[*] coverage time: 1661927091
+[*] coverage3: 1661927091:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000195
 -- Program output begins --
 0 processes nudged
 nudge operation failed, verify permissions and parameters.
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data5'.
-[*] coverage5: 13303989036689:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_6_id_000007
+[+] Captured 961 tuples in 'data4'.
+[*] coverage time: 1661927093
+[*] coverage4: 1661927093:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000196
 -- Program output begins --
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data6'.
-[*] coverage6: 13303989037455:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_7_id_000008
--- Program output begins --
-0 processes nudged
-nudge operation failed, verify permissions and parameters.
--- Program output ends --
-
---- Program finished properly ---
-[+] Captured 922 tuples in 'data7'.
-[*] coverage7: 13303989038205:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_8_id_000009
--- Program output begins --
--- Program output ends --
-
---- Program finished properly ---
-[+] Captured 922 tuples in 'data8'.
-[*] coverage8: 13303989038970:1980
-[*] input test case: C:\Users\johan\code\irfanview\output\queue\id_9_id_000010
+[+] Captured 961 tuples in 'data5'.
+[*] coverage time: 1661927093
+[*] coverage5: 1661927093:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000197
 -- Program output begins --
 0 processes nudged
 nudge operation failed, verify permissions and parameters.
 -- Program output ends --
 
 --- Program finished properly ---
-[+] Captured 922 tuples in 'data9'.
-[*] coverage9: 13303989039767:1980
+[+] Captured 961 tuples in 'data6'.
+[*] coverage time: 1661927096
+[*] coverage6: 1661927096:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000198
+-- Program output begins --
+-- Program output ends --
+
+--- Program finished properly ---
+[+] Captured 961 tuples in 'data7'.
+[*] coverage time: 1661927097
+[*] coverage7: 1661927097:2023
+[*] input test case: C:\Users\johan\code\irfanview\out\queue\id_000199
+-- Program output begins --
 ```
 
 ## OUTPUT FILE 
 ```
-13304056723213:0
-13304056590793:1980
-13304056591558:1980
-13304056592136:1980
-13304056592839:1980
-13304056593403:1980
-13304056594089:1980
-13304056594683:1980
-13304056595293:1980
-13304056595902:1980
-13304056596511:1980
+1661927087:2023
+1661927088:2023
+1661927088:2023
+1661927091:2023
+1661927093:2023
+1661927093:2023
+1661927096:2023
+1661927097:2023
+
 ```
