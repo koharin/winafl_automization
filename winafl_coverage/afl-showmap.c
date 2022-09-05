@@ -1260,14 +1260,11 @@ void save_coverage(u8* out_path){
     u32 i = (MAP_SIZE >> 2);
   #endif
 
-    u8 ret = 0;
     u8* fn;
-    s32 fd, fd2;
+    s32 fd;
     u64 time=0;
     const char *fn2;
-    char *buf=NULL, *pos=NULL;
     FILE *f, *f2;
-    int num;
 
     // write difference between current and virgin
     if(!count){
