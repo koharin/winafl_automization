@@ -61,4 +61,3 @@ Based on AFL 2.36b by <lcamtuf@google.com>
 
          Location : run_target(), C:\Users\johan\winafl\afl-showmap2.c:741
 ```
-- solve above error
