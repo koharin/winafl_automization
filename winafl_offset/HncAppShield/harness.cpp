@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <Windows.h>
 #include <iostream>
@@ -18,31 +19,27 @@ wchar_t* charToWChar(const char* text)
 int fuzz_hwp(wchar_t* filename)
 {
     AppShield_InspectMalware(filename);
-    return 0;
+    return 2;
 }
 
 int main(int argc, char** argv)
 {
-    SetDllDirectoryA("C:\\Program Files (x86)\\Hnc\\Office NEO\\HOfficeViewer96\\Bin");
-    HINSTANCE HncAppShield = LoadLibraryA("HncAppShield.dll");
+    HINSTANCE HncAppShield = LoadLibraryA("C:\\Program Files (x86)\\Hnc\\Office NEO\\HOfficeViewer96\\Bin\\HncAppShield.dll");
     int isDetected = 0;
-
-/*
-    if(argc < 2){
-        fprintf(stderr, "Usage: %s [input filename]\n", argv[0]);
-        return 1;
-    }
-*/
     if (HncAppShield == NULL) {
         fprintf(stderr, "Error: Unable to open target dll\n");
         return -1;
     }
-    //AppShield_InspectMalware = (INSPECT)GetProcAddress(HncAppShield, (LPCSTR)1);
-    //AppShield_InspectMalware = (INSPECT)GetProcAddress(HncAppShield, "AppShield_InspectMalware");
     AppShield_InspectMalware = (INSPECT)GetProcAddress(HncAppShield, "AppShield_InspectMalware");
+    if(AppShield_InspectMalware == NULL){
+        fprintf(stderr, "Error: Failed to get address for AppShield_InspectMalware\n");
+        return 1;
+    }
+
+    //printf("function ptr: 0x%x\n", AppShield_InspectMalware);
 
     isDetected = fuzz_hwp(charToWChar(argv[1]));
-    //printf("Malware result: %d\n", isDetected);
+    printf("[Malware result] %d\n", isDetected);
     
     return isDetected;
 }
