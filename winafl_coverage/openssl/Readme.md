@@ -39,3 +39,5 @@ afl-fuzz.exe -i "path\to\input" -o "path\to\output" -D "path\to\DynamoRIO\bin32"
 ```
 - fuzz to get testcases
 - testcases path: `queue` directory of output directory
+
+![fuzzing](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/5fa1a75b-415b-43cb-974b-aa0cb5422cf6/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20221008%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20221008T162541Z&X-Amz-Expires=86400&X-Amz-Signature=ae1d8519254854b1d640b76aac96a769e0b5a5ce04c2efdb0f4461b8b65d5a42&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22Untitled.png%22&x-id=GetObject)
