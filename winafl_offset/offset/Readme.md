@@ -13,6 +13,6 @@ cmake --build . --config Release
 
 ## Usage
 ```shell
-autooffset.bat [target path] [target method name]
+autooffset.bat [harness path] [target function name]
 ```
 - winafl 디렉토리 내 `afl-fuzz.exe` 경로에서 스크립트 실행
