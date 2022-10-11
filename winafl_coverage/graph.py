@@ -18,6 +18,13 @@ while True:
 	time.append(int(t))
 	coverage.append(int(c))
 
+#print(time)
+
+base = time[0]
+
+for i in range(0, len(time)):
+	time[i]=time[i]-base
+
 print(time)
 print(coverage)
 
@@ -29,7 +36,7 @@ ax.plot(time ,coverage)
 
 # labeling
 plt.ylabel('coverage')
-plt.xlabel('testcase modified time')
+plt.xlabel('testcase modified time (ms)')
 
 # show coverage graph
 plt.show()
