@@ -74,8 +74,8 @@ static char   *fuzzer_id = NULL;      /* The fuzzer ID or a randomized
 static u8* trace_bits;                /* SHM with instrumentation bitmap   */
 static u8  virgin_bits[MAP_SIZE];     /* Regions yet untouched by fuzzing */
 
-static u8 *out_file,                  /* Trace output file                 */
-          *doc_path,                  /* Path to docs                      */
+//static u8 *out_file,                  /* Trace output file                 */
+static u8 *doc_path,                  /* Path to docs                      */
           *target_path,               /* Path to target binary             */
           *at_file;                   /* Substitution string for @@        */
 
@@ -106,10 +106,12 @@ static volatile u8
 #define AREP64(_sym)  AREP32(_sym), AREP32(_sym)
 #define AREP128(_sym) AREP64(_sym), AREP64(_sym)
 
-int test(char *file_path, char **argv);
+int fuzz(char *file_path, char **argv);
 void save_coverage(u8* out_path);
 s32 count=0;
 u64 coverage=0;
+u8 *out_file;
+u8 *temp_file;
 
 static const u8 count_class_human[256] = {
 
@@ -286,8 +288,8 @@ static u32 write_results(void) {
 
   s32 fd;
   u32 i, ret = 0;
-  char c;
-  char str[10];
+  int c=0;
+  char str[30]={0,};
 
   u8  cco = !!getenv("AFL_CMIN_CRASHES_ONLY"),
       caa = !!getenv("AFL_CMIN_ALLOW_ANY");
@@ -303,17 +305,29 @@ static u32 write_results(void) {
     if (fd < 0) PFATAL("Unable to open stdout");
 
   } else {
+
     // make filename
     c = count + '0';
     if(!count){
       itoa(count, str, 10);
       strcat(out_file, str);
     }
-    else out_file[strlen(out_file)-1] = c;
+    else {
+      if(count < 10) out_file[strlen(out_file)-1] = c;  
+      else{
+        itoa(count, str, 10);
+        out_file[strlen(out_file)-2] = '\0';
+        strcat(out_file, str);
+      }
+    }
+    
+    
+    //OKF("out file: %s\n", out_file);
 
     // open output file
     fd = _open(out_file, O_WRONLY | O_CREAT | O_TRUNC, DEFAULT_PERMISSION);
     if (fd < 0) PFATAL("Unable to create '%s'", out_file);
+
 
   }
 
@@ -334,7 +348,7 @@ static u32 write_results(void) {
 
     for (i = 0; i < MAP_SIZE; i++) {
 
-      if (!trace_bits[i]) continue;
+      //if (!trace_bits[i]) continue;
       ret++;
 
       if (cmin_mode) {
@@ -730,12 +744,6 @@ static void run_target(char** argv) {
     //a workaround for first cycle
     ReadFile(pipe_handle, &result, 1, &num_read, NULL);
   }
-  /*
-  if(result == 0){
-    // save us from getting stuck in corner case.
-
-  }
-  */
   if (result != 'P')
   {
     FATAL("Unexpected result from pipe! expected 'P', instead received '%c'\n", result);
@@ -1134,13 +1142,13 @@ int main(int argc, char** argv) {
   use_argv = argv + optind;
   
   memset(virgin_bits, 0, MAP_SIZE);
-  test(argv[i+2], use_argv);
+  fuzz(argv[i+2], use_argv);
 
   exit(child_crashed * 2 + child_timed_out);
 
 }
 
-int test(char *file_path, char **argv){
+int fuzz(char *file_path, char **argv){
   WIN32_FIND_DATA sd;
   HANDLE h;
   char *find_pattern;
