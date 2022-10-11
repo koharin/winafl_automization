@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     printf("[+] dll base: 0x%x\n", dll_handle);
     printf("[+] function addr: 0x%x\n", RAND_load_file);
 
-    isDetected = fuzzme(charToWChar(argv[1]), 10);
+    isDetected = fuzzme(charToWChar(argv[1]), 100);
     printf("[Malware result] %d\n", isDetected);
     return isDetected;
 }
