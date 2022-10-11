@@ -39,7 +39,7 @@ cmake --build . --config Release
 
 ## USAGE
 ```bash
-coverage_graph.bat
+coverage_graph.bat "path\to\harness\binary" "target\functionname\in\harness"
 ```
 
 ## TROUBLESHOOTING
