@@ -1151,104 +1151,92 @@ int main(int argc, char** argv) {
 int fuzz(char *file_path, char **argv){
   WIN32_FIND_DATA sd;
   HANDLE h;
-  char *find_pattern;
+  char *find_pattern, *find_path;
   int i=0,j=0;
   s32 fd2,fd3;
   u8* fn;
   FILE *f, *f2;
 
 
-  find_pattern = alloc_printf("%s\\*", file_path);
+  find_path = alloc_printf("%s\\queue", file_path);
+  find_pattern = alloc_printf("%s\\*", find_path);
   //ACTF("file_path: %s\n", find_pattern);
   h = FindFirstFile(find_pattern, &sd);
   if(h == INVALID_HANDLE_VALUE){
-    PFATAL("Unable to open %s\n", file_path);
-
+    PFATAL("Unable to open %s\n", find_path);
+    ck_free(find_pattern);
+    ck_free(find_path);
+    return 1;
   }
 
+  // get testcase
   do{
     WIN32_FIND_DATA qd;
     HANDLE h2;
-    u8 *qd_path, *qd_path_pattern;
+    u8* path;
+    s32 fd;
+    struct stat st;
+    int tcnt=0;
 
     if(sd.cFileName[0] == '.') continue;
-    qd_path = alloc_printf("%s\\%s\\queue", file_path, sd.cFileName);
-    qd_path_pattern = alloc_printf("%s\\*", qd_path);
+    path = alloc_printf("%s\\%s", find_path, sd.cFileName);
+    ACTF("input test case: %s", path);
 
-    h2 = FindFirstFile(qd_path_pattern, &qd);
-    if(h2 == INVALID_HANDLE_VALUE){
-      ck_free(qd_path_pattern);
-      ck_free(qd_path);
+    // map the testcase into memory
+    fd = open(path, O_RDONLY | O_BINARY);
+    if(fd < 0){
+      ck_free(path);
       continue;
     }
-    //ACTF("queue path: %s", qd_path);
-    // get testcase
-    do{
-      u8* path;
-      s32 fd;
-      struct stat st;
-      int tcnt=0;
 
-      if(qd.cFileName[0] == '.') continue;
-      // get input test case path in queue
-      path = alloc_printf("%s\\%s", qd_path, qd.cFileName); 
-      ACTF("input test case: %s", path);
+    if(fstat(fd, &st)) PFATAL("fstat() failed");
 
-      // map the test case into memory
-      fd = open(path, O_RDONLY | O_BINARY);
-      if(fd < 0){
-        ck_free(path);
-        continue;
-      }
+    // ignore zero-sized or oversized files
+    if(st.st_size && st.st_size <= MAX_FILE){
+      u8* mem = malloc(st.st_size);
+      read(fd, mem, st.st_size);
 
-      if(fstat(fd, &st)) PFATAL("fstat() failed");
-
-      // ignore zero-sized or oversized files
-      if(st.st_size && st.st_size <= MAX_FILE){
-        u8* mem = malloc(st.st_size);
-        read(fd, mem, st.st_size);
-
-        fn = alloc_printf("%s\\%s", file_path, "temp");
-        if((fd3 = _open(fn, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, DEFAULT_PERMISSION)) < 0)
-          PFATAL("Unable to create or open %s", fn);
-        if(!(f2 = _fdopen(fd3, "w"))){
-          PFATAL("fdopen() failed");
-          fclose(f2);
-        }
-        fprintf(f2, "%llu\n", st.st_mtime);
+      fn = alloc_printf("%s\\%s", file_path, "temp");
+      if((fd3 = _open(fn, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, DEFAULT_PERMISSION)) < 0)
+        PFATAL("Unable to create or open %s", fn);
+      if(!(f2 = _fdopen(fd3, "w"))){
+        PFATAL("fdopen() failed");
         fclose(f2);
-
-        // run target with given test case
-        run_target(argv);
-        // write bitmap data to output file
-        tcnt = write_results();
-
-        if(!quiet_mode) {
-
-          if(!tcnt) SAYF("No instrumentation detected");
-          else { 
-            OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
-            // write coverage difference between current(trace_bits) and virgin(virgin_bits)
-            save_coverage(file_path);
-          }
-        }
-        free(mem);
-        unlink(fn);
-        // counting for testcase result filename
-        count++;
       }
+      fprintf(f2, "%llu\n", st.st_mtime);
+      fclose(f2);
 
-      ck_free(path);
-      close(fd);
-    }while(FindNextFile(h2, &qd));
+      // run target with given test case
+      run_target(argv);
+      
+      // write bitmap data to output file
+      tcnt = write_results();
+
+      if(!quiet_mode) {
+
+        if(!tcnt) SAYF("No instrumentation detected");
+        else { 
+          OKF("Captured %u tuples in '%s'." cRST, tcnt, out_file);
+          // write coverage difference between current(trace_bits) and virgin(virgin_bits)
+          save_coverage(file_path);
+        }
+      }
+      free(mem);
+      unlink(fn);
+      
+      // counting for testcase result filename
+      count++;
+    }
+
+    ck_free(path);
+    close(fd);
     
-    FindClose(h2);
-    ck_free(qd_path);
-    ck_free(qd_path_pattern);
   }while(FindNextFile(h, &sd));
 
   FindClose(h);
   ck_free(find_pattern);
+  ck_free(find_path);
+
   return 0;
 }
 
@@ -1300,7 +1288,7 @@ void save_coverage(u8* out_path){
     ACTF("coverage time: %llu", time);
 
     // open coverage output file
-    fn = alloc_printf("%s\\coverage\\%s", out_path, "coverage");
+    fn = alloc_printf("%s\\%s", out_path, "coverage");
     fd = _open(fn, O_WRONLY | O_APPEND | O_BINARY|O_CREAT, DEFAULT_PERMISSION);
     if(fd < 0) PFATAL("Unable to create or open %s", fn);
     
