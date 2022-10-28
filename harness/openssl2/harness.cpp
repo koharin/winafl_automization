@@ -3,9 +3,10 @@
 #include <Windows.h>
 #include <iostream>
 
-extern "C" __declspec(dllexport) __declspec(noinline) int fuzzme(wchar_t* filename, signed int ElementCount);
+extern "C" __declspec(dllexport) __declspec(noinline) int fuzzme(const char *filename, long ElementCount);
 
-typedef int(*INSPECT)(wchar_t* filename, signed int ElementCount);
+typedef int(*INSPECT)(const char *filename, long ElementCount);
+
 INSPECT RAND_load_file;
 
 wchar_t* charToWChar(const char* text)
@@ -16,12 +17,13 @@ wchar_t* charToWChar(const char* text)
     return wa;
 }
 
-int fuzzme(wchar_t* filename, signed int ElementCount)
+int fuzzme(const char *filename, long ElementCount)
 {
     int result = RAND_load_file(filename, ElementCount);
     printf("result: %d\n", result);
     return result;
 }
+
 
 int main(int argc, char** argv)
 {
@@ -41,7 +43,9 @@ int main(int argc, char** argv)
     printf("[+] dll base: 0x%x\n", dll_handle);
     printf("[+] function addr: 0x%x\n", RAND_load_file);
 
-    isDetected = fuzzme(charToWChar(argv[1]), 100);
+    isDetected = fuzzme(argv[1], 100);
+
     printf("[Malware result] %d\n", isDetected);
+
     return isDetected;
 }
